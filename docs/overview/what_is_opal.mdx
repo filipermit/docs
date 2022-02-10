@@ -1,0 +1,48 @@
+---
+sidebar_position: 1
+title: What is Opal.ac?
+slug: what-is-opalac
+---
+
+## What is OPAL?
+
+OPAL is an open-source project for administrating authorization and access-control.
+
+OPAL responds to policy and data changes, and pushes live updates to your agents, bringing open-policy up to the speed needed by live applications.
+
+As you push updates to your application's stores (e.g. Git, DBs, S3, SaaS services) OPAL will make sure your services are always in sync with the authorization data and policy they need (and only those they need.)
+
+### OPAL Architecture
+
+![Solution diagram](/img/diagrams/architecture.svg)
+
+OPAL is implemented in a client-server architecture and allows scaling OPAL with OPA.
+
+** The OPAL Server
+The OPAL server listens to policy changes as reflected in Github (or any other source control solution you use to track policy changes).
+Once an update occurs, the OPAL server will trigger an update for the OPAL clients. 
+
+** The OPAL Clients
+The OPAL clients are a side-car to the OPA agent, and listen to the specific changes relevant to the agent they are coupled with.
+Once a policy update occurs, the OPAL client is triggered and will fetch the latest data to update the polivcy agent.
+
+For data changes, the OPAL client uses data fetchers.
+
+** OPAL Data Fetchers
+Data fetchers responsible to fetch data from any data source, and update the policy as data changes.
+
+The data fetchers are extendable, so you can create your own data fetcher and connect to any microservice, API, DB, or propietery source you need data from.
+
+The data fetcher listens to changes in the data source, and upon change the fetcher will fetch the latest data and update the policy with the latest.
+
+## OPAL is Realtime
+
+OPAL is all about easily managing your authorization layer in realtime, using a Websocket Pub/Sub channel. Each OPAL-client subscribes to and receives updates instantly.
+
+## OPAL is Stateless
+
+OPAL is designed for elasticity and scale, mainly via scaling out both client and server instances, as such neither are stateful.
+
+## OPAL is Extensible
+
+OPAL is extremely easy to extend and embed, as easy as writing Python. For example you can teach OPAL to retrieve AuthZ data from anywhere by implementing simple FetchingProviders
