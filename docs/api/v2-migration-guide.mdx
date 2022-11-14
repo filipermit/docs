@@ -1,37 +1,49 @@
 ---
 sidebar_position: 1
-title: Migrating v1 to v2
+title: Migrating the API - v1 to v2
 ---
 
-## Who is this guide for?
+:::info
+You can find the new V2 API **[here](https://api.permit.io/v2/redo)**. 🚀
+
+If you need further help or have questions, please reach out to our team on **[Slack](https://permit-io.slack.com/join/shared_invite/zt-nz6yjgnp-RlP9rtOPwO0n0aH_vLbmBQ#/shared-invite/email)**. 💁
+:::
+
+### Who is this guide for?
 
 Anyone who's used our original v1 API, which was the current version until recently.
 
-## Why migrate?
+### Why migrate?
 
 The v2 API was built from the ground up to be more convenient to use and faster than the v1 API. While you can keep using v1 for a while, we'll eventually retire it. Also, going forward new features (like ABAC) will only be available in v2.
 
-## TL;DR - What changed
+### TL;DR - What changed overview
 
-- There is now a strict hierarchy of objects - Organizations contain Projects which contain Environments, which with few exceptions contain all objects you're familiar with.
+:::info Strict Hierarchy of Objects
+Organizations contain Projects which contain Environments, which with few exceptions contain all objects you're familiar with.
 
-- All objects are divided into general, schema and facts objects, and can be found under their respective roots.
+All objects are divided into **general**, **schema** and **facts** objects, and can be found under their respective roots.
 
-  - General objects are Organizations, Projects, Environments.
-  - Schema objects are Roles, Resources, Actions, and Condition Sets.
-  - Facts objects are Tenants, Users, Role Assignments, and Condition Set Rules.
+**General objects**: Organizations, Projects, Environments.<br/>
+**Schema objects**: Roles, Resources, Actions, and Condition Sets.<br/>
+**Facts objects**: Tenants, Users, Role Assignments, and Condition Set Rules.<br/>
+:::
 
-- Previously we had slugs, custom_ids and keys in various places. In v2 they've all been replaced with keys, which are immutable strings unique under their respective namespaces, and can be used wherever Permit-'s auto-generated UUIDs are used. They enable better looking URLs and simpler integration with your system's native naming rules.
+:::info Slugs and Custom ID's have all been replaced with Keys
+Keys are immutable strings unique under their respective namespaces, and can be used wherever Permit-'s auto-generated UUIDs are used. They enable better looking URLs and simpler integration with your system's native naming rules.
+:::
 
-- Organization-scoped schema objects are no longer supported (if you don't know what that means, good news, almost no one is using them anyway). In v1 they'll show up and work as intended in PDPs, but in v2 they'll be shown under a special compatibility environment called “v1compat_global_env”, and won't function in v2 PDPs. You're advised to move to properly scoped objects under a single environment.
+#### Organization-scoped schema objects are no longer supported
 
-- The v1 API can be used and will show the same schema and data as v2, as will v1 PDPs, but they're deprecated and we recommend you move to v2 as soon as convenient. You can use both APIs interchangeably, but except quirks as they have different assumptions about the structure of data.
+If you don't know what that means, good news, almost no one is using them anyway. In v1 they'll show up and work as intended in PDPs, but in v2 they'll be shown under a special compatibility environment called **“v1compat_global_env”**, and won't function in v2 PDPs. You're advised to move to properly scoped objects under a single environment.
 
-- The write functionality in the SDKs has been completely redesigned to be easier and more convenient to use, but is not compatible with the v1 SDKs. If your code writes using the SDKs, you'll have to modify it to use the new calls. Note that if the only write you're doing is sync_user, the change is trivial to implement. See [Migrating the PDP and SDK](#migrating-the-pdp-and-sdk) for how to do that.
+#### V1 API remains active, but it is deprecated and no longer maintained
 
-Find the new redoc at **https://api.permit.io/v2/redoc**.
+The v1 API can be used and will show the same schema and data as v2, as will v1 PDPs, but they're deprecated and we recommend you move to v2 as soon as it is convenient. You can use both APIs interchangeably, but except quirks as they have different assumptions about the structure of data.
 
-As always, we're available on **[Slack](https://permit-io.slack.com/join/shared_invite/zt-nz6yjgnp-RlP9rtOPwO0n0aH_vLbmBQ#/shared-invite/email)**, so if you need help, feel free to ask.
+#### SDK functionality has been fully redesigned
+
+The SDKs have become easier and more convenient to use, but are not compatible with the v1 SDKs. If your code writes using the SDKs, you'll have to modify it to use the new calls. Note that if the only write you're doing is sync_user, the change is trivial to implement. See [Migrating the PDP and SDK](#migrating-the-pdp-and-sdk) for how to do that.
 
 ## New Object Hierarchy
 
@@ -56,6 +68,7 @@ Every object category has a consistent path hierarchy. Wherever you see {somethi
 Nested objects (for example, User-Tenant) associations are under their respective parent objects.
 
 As for methods, they follow industry standard REST API conventions:
+
 - GET on an object type lists objects
 - GET on a specific object fetches that object
 - POST on an object type creates a new object
@@ -174,8 +187,8 @@ When looking through the v2 API or the web interface, all v1 Organization-scoped
 
 If you want to fetch all Organization-scoped objects through the REST API, using your Orgnaization-global API key make calls to:
 
-	https://api.permit.io/v2/schema/v1_global_project/v2_global_env/roles
-	https://api.permit.io/v2/facts/v1_global_project/v2_global_env/users
+    https://api.permit.io/v2/schema/v1_global_project/v2_global_env/roles
+    https://api.permit.io/v2/facts/v1_global_project/v2_global_env/users
 
 If you get a 404, you have no Environment called 'v2_global_env', meaning you have no Organization-scoped objects.
 
@@ -191,9 +204,9 @@ As mentioned before, the v2 PDP only works with the v2 SDK and vice versa, so yo
 
 To launch a v2 PDP, simply use the existing command you have for the v1 SDK to permitio/sidecar-v2. For example, if your API key is permit_key_abcdefghijklmnopqrstuvwxyz, then the v2 command will be:
 
-	docker run -p 7766:7000 \
-		--env PDP_API_KEY=permit_key_abcdefghijklmnopqrstuvwxyz \
-		permitio/pdp-v2:latest
+    docker run -p 7766:7000 \
+    	--env PDP_API_KEY=permit_key_abcdefghijklmnopqrstuvwxyz \
+    	permitio/pdp-v2:latest
 
 If you're not doing writes through the SDKs, then aside from upgrading to the new v2 SDKs and pointing them at the new v2 PDP, there's nothing you need to do. The permit.check call and the module initialization is exactly the same as in v1.
 
@@ -201,16 +214,16 @@ If you are doing writes through the SDK, the new API is quite easier to use, but
 
 For example (in Python), instead of doing in v1:
 
-	await permit.write(permit.api.sync_user(
-			user.customId,
-			user.first_name,
-			user.last_name,
-			user.email,
-			))
+    await permit.write(permit.api.sync_user(
+    		user.customId,
+    		user.first_name,
+    		user.last_name,
+    		user.email,
+    		))
 
 You'd do in v2:
 
-	await permit.api.sync_user(user)
+    await permit.api.sync_user(user)
 
 With user being a dict containing the same attributes as in the REST API (in this case, only 'key' is mandatory, though usually you'd also provide either an email address or first and last names to make the decision logs more user-friendly).
 
