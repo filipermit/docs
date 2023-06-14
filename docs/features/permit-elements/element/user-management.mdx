@@ -119,6 +119,25 @@ Passing in the tenant is **compulsory** when logging in a user **server-side**.
 	If you use custom Authentication Header to authenticate to your backend, add
 	this route to your backend.
 </CodeDropdown>
+<CodeDropdown
+	number="2.4"
+	title="Using FrontendOnly"
+	server
+	code={[
+		"When using frontendOnly\nyou don't need to add code to your backend.\nInstead you need to add your JWKS object to Permit.\nmake sure that your permit user key is the same as jwt sub or pass `userKeyClaim` in the login to point to the right claim. see 4.4 section\n",
+	]}
+	language={["frontendOnly"]}
+	languages={["FrontendOnly"]}
+>
+	First open your Permit Dashboard and go to the **Elements** page. Then click
+	on **Configure JWKS** on the upper left corner and add your JWKS to the
+	dialog. Then paste your JWKS into the text dialog and click **OK**.
+	_![Configure JWKS](/img/elements/configure-jwks.png)_ Now make sure that your
+	Permit user key is the same as the jwt sub. You can see your permit user key
+	in the **Users** page in the Permit Dashboard. You can see your jwt sub with
+	sites like [jwt.io](https://jwt.io/). Just paste your jwt token into the text
+	dialog check in the left side the sub field.
+</CodeDropdown>
 
 ### Install Permit-js
 
@@ -164,9 +183,11 @@ There are **four** things that need to be configured here:
 
 1.  `loginUrl` - The url that corresponds to your backend login route you created in the last step.
 2.  `loginMethod` - The login method you are using in your backend.
-3.  `tenant` (Optional) - The name of the tenant that the user is part of, you can set it at your backend as well.
-4.  `token` (Optional) - If your login method is bearer token, you need to pass the token here.
-5.  `headers` (Optional) - If your login method is custom headers, you need to pass the headers here.
+3.  `tenant` (Optional) - Required for frontendOnly login method. the name of the tenant that the user is part of, you can set it at your backend as well, if you are using frontendOnly this is required.
+4.  `token` (Optional) - Required for bearer token login method, you need to pass the token here.
+5.  `headers` (Optional) - Required for custom headers login method, you need to pass the headers here.
+6.  `userJwt` (Optional) - Required for frontendOnly login method, you need to pass the user jwt here.
+7.  `envId` (Optional) - Required for frontendOnly login method, you need to pass the env id here.
 
 There are **3 supported login options** choose the one that you are using in your backend.
 
@@ -176,7 +197,7 @@ There are **3 supported login options** choose the one that you are using in you
 	client
 	code={[code.loginDefault]}
 	language={["javascript"]}
-	languages={["Node"]}
+	languages={["JS"]}
 	open={false}
 >
 	The **loginMethod** here should be set to: `LoginMethod: LoginMethod.cookie`.
@@ -188,7 +209,7 @@ There are **3 supported login options** choose the one that you are using in you
 	client
 	code={[code.loginHeaders]}
 	language={["javascript"]}
-	languages={["Node"]}
+	languages={["JS"]}
 	open={false}
 >
 	The **loginMethod** here should be set to: `LoginMethod: LoginMethod.bearer`
@@ -201,13 +222,29 @@ There are **3 supported login options** choose the one that you are using in you
 	client
 	code={[code.other_headers]}
 	language={["javascript"]}
-	languages={["Node"]}
+	languages={["JS"]}
 	open={false}
 >
 	The **loginMethod** here should be set to: `LoginMethod: LoginMethod.header`
 	and you should pass the **headers** to the current user auth headers.
 </CodeDropdown>
+<CodeDropdown
+	number="4.4"
+	title="FrontendOnly"
+	client
+	code={[
+		code.frontendOnlyLogin
+	]}
+	language={["javascript"]}
+	languages={["JS"]}
+>
+	The **loginMethod** here should be set to: `LoginMethod: LoginMethod.frontendOnly`
+	**userJwt** should be set to the current user token.
+	**tenant** should be set to the tenant you want to get access to, the current user must have role assigned to him in this tenant.  
+	**envId** should be set to the environment id you want to get access to, you need to make sure you have set the JWKS in this env see step 2.4, you can get your env id with [this api call](https://api.permit.io/v2/docs#/Environments/list_environments).Or take it from the get code dialog in the Permit Elements Dashboard.  
+	**userKeyClaim** (Optional) - Optional for frontendOnly login method, if your user key in Permit isn't the same as the jwt `sub` claim, you need to pass the key of the claim here.
 
+</CodeDropdown>
 After you run login successfully you will **get a cookie** called `permit_session` which will allow you to
 load your Permit Element securly and successfully.
 
@@ -275,15 +312,55 @@ _![Audit Logs Element](/img/elements/configuration.png)_
 
 ### Configure your webhook
 
-With some Permit Elements, you will get the option to configure a webhook to stay informed of the actions that are performed by the end users.
+Webhooks are automated messages sent from apps when something happens. They carry data in 'payloads', which are sent to a
+unique URL, essentially a place where your API can accept data.
+
+With some Permit Elements, you will get the option to configure a webhook to stay informed of the actions that are performed
+by the end users.
 
 _![Webhook](/img/elements/webhook.png)_
 
 :::info EXAMPLE
-For the User Management Element, a webhook will allow you to recieve updates each time a new user is created in your system.
+The User Management Element's webhook provides an array of functionalities. For example, you can leverage it to receive
+notifications each time a new user is created in your system, or to initiate the sending of a welcome message to recently
+invited users.
 :::
 
-You will need to generate a new webhook URL that points to the running server-side application. As part of the configuration you are required to pass in a secret key and we will pass it as Bearer auth header with the user email role and level.
+#### Setting Up the URL Endpoint
+
+Before setting up a URL endpoint, it's important to note that the URL endpoint is the URL to which the webhook delivers data
+each time an event occurs. This endpoint should be set up on your server or a third-party service, depending on your preference.
+
+#### Choose Your Platform:
+
+Decide whether you want to set up your endpoint on your own server or use a third-party service. If you're comfortable
+managing a server and can handle potential scaling, security, and uptime issues, you may prefer to host it yourself.
+Otherwise, consider using a third-party service, many of which handle these issues for you.
+
+#### Create the Endpoint:
+
+Create a new endpoint on your server or within your chosen third-party service. This is often a case of creating a new
+URL route. For example, `/new-element-sure` or `/send-elements-email`.
+
+#### Implement Webhook Handling:
+
+Your endpoint needs to be able to receive POST requests, as webhooks will typically send data via this method. This
+means your endpoint needs to be set up to read the payload from incoming POST requests and then process it as required.
+This usually involves parsing JSON, although the exact format may vary.
+
+#### Secure Your Endpoint:
+
+Webhooks contain data, and you should ensure it's secure from potential malicious use. Within the Permit configuration screen,
+we provide a input box so you can enter your secret, and use it to validate incoming data. This will ensure that the data is coming
+from a trusted source. Also, ensure your endpoint uses HTTPS, encrypting data in transit.
+
+_![Webhook](/img/elements/webhook-2.png)_
+
+#### Respond to the Webhook:
+
+After receiving a POST request, it's good practice to send a 200 HTTP status code to acknowledge receipt of
+the data. If your endpoint fails to do this, the webhook may consider the delivery a failure and retry,
+causing unnecessary traffic.
 
 ## Embedding the iFrame
 
