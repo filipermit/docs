@@ -101,7 +101,8 @@ const config = {
 				selector: ".markdown :not(em) > img",
 			},
 			hotjar: {
-				applicationId: ,
+				// Added fake appID as variables are pulled from netlify & error without alternative
+				applicationId: process.env.HOTJAR_ID || "1234567890",
 			},
 			navbar: {
 				logo: {
